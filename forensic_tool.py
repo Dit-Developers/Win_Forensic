@@ -5,6 +5,23 @@ import socket
 import subprocess
 import psutil
 from datetime import datetime
+import time
+from termcolor import colored
+from tqdm import tqdm
+
+
+# Developer Credits
+DEVELOPER_NAME = "Muhammad Sudais Usmani"
+
+# Yellow and Green ASCII Banner
+ASCII_BANNER = colored(""" 
+██╗    ██╗██╗███╗   ██╗    ███████╗ ██████╗ ██████╗ ███████╗███╗   ██╗███████╗██╗ ██████╗
+██║    ██║██║████╗  ██║    ██╔════╝██╔═══██╗██╔══██╗██╔════╝████╗  ██║██╔════╝██║██╔════╝
+██║ █╗ ██║██║██╔██╗ ██║    █████╗  ██║   ██║██████╔╝█████╗  ██╔██╗ ██║███████╗██║██║     
+██║███╗██║██║██║╚██╗██║    ██╔══╝  ██║   ██║██╔══██╗██╔══╝  ██║╚██╗██║╚════██║██║██║     
+╚███╔███╔╝██║██║ ╚████║    ██║     ╚██████╔╝██║  ██║███████╗██║ ╚████║███████║██║╚██████╗
+ ╚══╝╚══╝ ╚═╝╚═╝  ╚═══╝    ╚═╝      ╚═════╝ ╚═╝  ╚═╝╚══════╝╚═╝  ╚═══╝╚══════╝╚═╝ ╚═════╝
+""", 'yellow')
 
 def is_windows():
     """Check if the operating system is Windows."""
@@ -16,6 +33,13 @@ def is_admin():
         return ctypes.windll.shell32.IsUserAnAdmin()
     except:
         return False
+
+def clear_screen():
+    """Clear the screen based on the operating system."""
+    if platform.system() == "Windows":
+        os.system('cls')
+    else:
+        os.system('clear')
 
 def get_system_info():
     return {
@@ -81,50 +105,41 @@ def get_network_connections():
         return f"Error retrieving network connections: {e}"
 
 def generate_html_report(system_info, user_accounts, programs, logs, processes, connections):
-    html_template = f"""
+    html_template = """
     <!DOCTYPE html>
     <html lang="en">
     <head>
         <meta charset="UTF-8">
         <meta name="viewport" content="width=device-width, initial-scale=1.0">
         <title>Windows Forensic Report</title>
-        <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
     </head>
     <body>
-        <div class="container my-4">
-            <h1 class="text-center mb-4">Windows Forensic Report</h1>
-            
-            <h2>System Information</h2>
-            <table class="table table-bordered">
-                <tbody>
+        <h1>Windows Forensic Report</h1>
+        <p>Developed by <strong>{DEVELOPER_NAME}</strong></p>
+        <a href="https://www.linkedin.com/in/muhammad-sudais-usmani-950889311/">LinkedIn</a>
+        <a href="https://github.com/Dit-Developers/">GitHub</a>
+        <hr>
+        <h2>System Information</h2>
+        <table border="1">
+            <tr><th>Key</th><th>Value</th></tr>
     """
+    # Add system info to the HTML template
     for key, value in system_info.items():
-        html_template += f"<tr><th>{key}</th><td>{value}</td></tr>"
+        html_template += f"<tr><td>{key}</td><td>{value}</td></tr>"
 
     html_template += """
-                </tbody>
-            </table>
-
-            <h2>User Accounts</h2>
-            <pre>{user_accounts}</pre>
-
-            <h2>Installed Programs</h2>
-            <pre>{programs}</pre>
-
-            <h2>Recent Event Logs</h2>
-            <pre>{logs}</pre>
-
-            <h2>Running Processes</h2>
-            <table class="table table-bordered">
-                <thead>
-                    <tr>
-                        <th>PID</th>
-                        <th>Name</th>
-                        <th>Username</th>
-                    </tr>
-                </thead>
-                <tbody>
+        </table>
+        <h2>User Accounts</h2>
+        <pre>{user_accounts}</pre>
+        <h2>Installed Programs</h2>
+        <pre>{programs}</pre>
+        <h2>Event Logs</h2>
+        <pre>{logs}</pre>
+        <h2>Running Processes</h2>
+        <table border="1">
+            <tr><th>PID</th><th>Name</th><th>Username</th></tr>
     """
+    # Add running processes to the HTML template
     for proc in processes:
         html_template += f"""
         <tr>
@@ -135,21 +150,12 @@ def generate_html_report(system_info, user_accounts, programs, logs, processes, 
         """
 
     html_template += """
-                </tbody>
-            </table>
-
-            <h2>Network Connections</h2>
-            <table class="table table-bordered">
-                <thead>
-                    <tr>
-                        <th>Type</th>
-                        <th>Local Address</th>
-                        <th>Remote Address</th>
-                        <th>Status</th>
-                    </tr>
-                </thead>
-                <tbody>
+        </table>
+        <h2>Network Connections</h2>
+        <table border="1">
+            <tr><th>Type</th><th>Local Address</th><th>Remote Address</th><th>Status</th></tr>
     """
+    # Add network connections to the HTML template
     for conn in connections:
         html_template += f"""
         <tr>
@@ -161,51 +167,71 @@ def generate_html_report(system_info, user_accounts, programs, logs, processes, 
         """
 
     html_template += """
-                </tbody>
-            </table>
-        </div>
+        </table>
     </body>
     </html>
     """
+    # Return formatted HTML
     return html_template.format(
-        user_accounts=user_accounts, programs=programs, logs=logs
+        DEVELOPER_NAME=DEVELOPER_NAME,
+        user_accounts=user_accounts, 
+        programs=programs, 
+        logs=logs
     )
 
 def save_report(html_content, file_name="forensic_report.html"):
     with open(file_name, "w") as file:
         file.write(html_content)
-    print(f"Report saved as {file_name}")
+    print(colored(f"Report saved as {file_name}", 'green'))
 
 if __name__ == "__main__":
+    clear_screen()  # Clear the screen at the start
+    print(ASCII_BANNER)
+
     if not is_windows():
-        print("This tool can only run on Windows platforms.")
+        print(colored("This tool can only run on Windows platforms.", 'red'))
         exit(1)
     if not is_admin():
-        print("Please run this script as an administrator.")
+        print(colored("Please run this script as an administrator.", 'red'))
         exit(1)
 
-    print("Collecting system information...")
-    system_info = get_system_info()
+    tasks = [
+        ("Collecting system information...", get_system_info),
+        ("Collecting user accounts...", get_user_accounts),
+        ("Collecting installed programs...", get_installed_programs),
+        ("Collecting event logs...", get_event_logs),
+        ("Collecting running processes...", get_running_processes),
+        ("Collecting network connections...", get_network_connections),
+    ]
 
-    print("Collecting user accounts...")
-    user_accounts = get_user_accounts()
+    system_info = {}
+    user_accounts = ""
+    programs = ""
+    logs = ""
+    processes = []
+    connections = []
 
-    print("Collecting installed programs...")
-    programs = get_installed_programs()
+    for task_desc, task_func in tasks:
+        print(colored(task_desc, 'yellow'))
+        for _ in tqdm(range(1), desc=task_desc, ncols=100, colour='yellow'):
+            time.sleep(0.5)  # Simulate loading time
+        if task_func == get_system_info:
+            system_info = task_func()
+        elif task_func == get_user_accounts:
+            user_accounts = task_func()
+        elif task_func == get_installed_programs:
+            programs = task_func()
+        elif task_func == get_event_logs:
+            logs = task_func()
+        elif task_func == get_running_processes:
+            processes = task_func()
+        elif task_func == get_network_connections:
+            connections = task_func()
 
-    print("Collecting event logs...")
-    logs = get_event_logs()
-
-    print("Collecting running processes...")
-    processes = get_running_processes()
-
-    print("Collecting network connections...")
-    connections = get_network_connections()
-
-    print("Generating HTML report...")
+    print(colored("Generating HTML report...", 'yellow'))
     html_report = generate_html_report(system_info, user_accounts, programs, logs, processes, connections)
 
-    print("Saving report...")
+    print(colored("Saving report...", 'yellow'))
     save_report(html_report)
 
-    print("Done!")
+    print(colored("Done!", 'green'))
